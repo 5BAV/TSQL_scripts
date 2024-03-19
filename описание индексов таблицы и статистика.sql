@@ -1,4 +1,4 @@
-set nocount, xact_abort on
+﻿set nocount, xact_abort on
 set tran isolation level read uncommitted
 
 declare @schema_table sysname = 'dbo.table'

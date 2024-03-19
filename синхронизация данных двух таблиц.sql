@@ -1,5 +1,5 @@
-/*
-ПРИМЕР:
+п»ї/*
+РџР РРњР•Р :
 	exec dbo.pr_Refreshing_Table_inPacks
 		@target_table = ''[database].[schema].[$$$table]''
 		,@source_table = ''[linkserver].[database].[schema].[table]''
@@ -13,21 +13,21 @@
 		,@pack_size = 4000
 		,@ignore_TS_in_target = 0
 		,@show_info = 2
-			-- (0) никакой информации, (1) в конце одной строкой, (2) только таблица сравнения, (3) подробная информация в процессе выполнения
+			-- (0) РЅРёРєР°РєРѕР№ РёРЅС„РѕСЂРјР°С†РёРё, (1) РІ РєРѕРЅС†Рµ РѕРґРЅРѕР№ СЃС‚СЂРѕРєРѕР№, (2) С‚РѕР»СЊРєРѕ С‚Р°Р±Р»РёС†Р° СЃСЂР°РІРЅРµРЅРёСЏ, (3) РїРѕРґСЂРѕР±РЅР°СЏ РёРЅС„РѕСЂРјР°С†РёСЏ РІ РїСЂРѕС†РµСЃСЃРµ РІС‹РїРѕР»РЅРµРЅРёСЏ
 */
 
 create or alter proc [dbo].[pr_Refreshing_Table_inPacks]
-	 @target_table varchar(max) --целевая таблица, $$ для обозначения однотипных таблиц
-	,@source_table varchar(max) --таблица источник, $$ для обозначения однотипных таблиц
-	,@condition_for_refreshing varchar(max) --условия(ключ) для соединения таблиц (on)
-	,@target_filter varchar(max) = '' --фильтр на целевой таблице (where)
-	,@source_filter varchar(max) = '' --фильтр на таблице источнике (where)
-	,@type_of_refresh int --тип модификаций целевой таблицы 0=DEL+UPD+INS 1=UPD+INS 3=UPD 4=INS
-	,@exclude_fields varchar(max) = '' --список колонок которые не учитываются в процессе, через |
-	,@computed_columns varchar(max) = '' --виртуальные определения колонок нужных для процесса
-	,@pack_size int = 4000 --размер пачек для итераций модификации
-	,@ignore_TS_in_target bit = 1 --игнорировать изменение таймштампа в целевой таблице (если значение было модифицировано во время выполнения)
-	,@show_info int = 0 -- вывод отладочной информации 0=никакой информации 1=в конце одной строкой 2=только таблица сравнения 3=подробная информация в процессе выполнения
+	 @target_table varchar(max) --С†РµР»РµРІР°СЏ С‚Р°Р±Р»РёС†Р°, $$ РґР»СЏ РѕР±РѕР·РЅР°С‡РµРЅРёСЏ РѕРґРЅРѕС‚РёРїРЅС‹С… С‚Р°Р±Р»РёС†
+	,@source_table varchar(max) --С‚Р°Р±Р»РёС†Р° РёСЃС‚РѕС‡РЅРёРє, $$ РґР»СЏ РѕР±РѕР·РЅР°С‡РµРЅРёСЏ РѕРґРЅРѕС‚РёРїРЅС‹С… С‚Р°Р±Р»РёС†
+	,@condition_for_refreshing varchar(max) --СѓСЃР»РѕРІРёСЏ(РєР»СЋС‡) РґР»СЏ СЃРѕРµРґРёРЅРµРЅРёСЏ С‚Р°Р±Р»РёС† (on)
+	,@target_filter varchar(max) = '' --С„РёР»СЊС‚СЂ РЅР° С†РµР»РµРІРѕР№ С‚Р°Р±Р»РёС†Рµ (where)
+	,@source_filter varchar(max) = '' --С„РёР»СЊС‚СЂ РЅР° С‚Р°Р±Р»РёС†Рµ РёСЃС‚РѕС‡РЅРёРєРµ (where)
+	,@type_of_refresh int --С‚РёРї РјРѕРґРёС„РёРєР°С†РёР№ С†РµР»РµРІРѕР№ С‚Р°Р±Р»РёС†С‹ 0=DEL+UPD+INS 1=UPD+INS 3=UPD 4=INS
+	,@exclude_fields varchar(max) = '' --СЃРїРёСЃРѕРє РєРѕР»РѕРЅРѕРє РєРѕС‚РѕСЂС‹Рµ РЅРµ СѓС‡РёС‚С‹РІР°СЋС‚СЃСЏ РІ РїСЂРѕС†РµСЃСЃРµ, С‡РµСЂРµР· |
+	,@computed_columns varchar(max) = '' --РІРёСЂС‚СѓР°Р»СЊРЅС‹Рµ РѕРїСЂРµРґРµР»РµРЅРёСЏ РєРѕР»РѕРЅРѕРє РЅСѓР¶РЅС‹С… РґР»СЏ РїСЂРѕС†РµСЃСЃР°
+	,@pack_size int = 4000 --СЂР°Р·РјРµСЂ РїР°С‡РµРє РґР»СЏ РёС‚РµСЂР°С†РёР№ РјРѕРґРёС„РёРєР°С†РёРё
+	,@ignore_TS_in_target bit = 1 --РёРіРЅРѕСЂРёСЂРѕРІР°С‚СЊ РёР·РјРµРЅРµРЅРёРµ С‚Р°Р№РјС€С‚Р°РјРїР° РІ С†РµР»РµРІРѕР№ С‚Р°Р±Р»РёС†Рµ (РµСЃР»Рё Р·РЅР°С‡РµРЅРёРµ Р±С‹Р»Рѕ РјРѕРґРёС„РёС†РёСЂРѕРІР°РЅРѕ РІРѕ РІСЂРµРјСЏ РІС‹РїРѕР»РЅРµРЅРёСЏ)
+	,@show_info int = 0 -- РІС‹РІРѕРґ РѕС‚Р»Р°РґРѕС‡РЅРѕР№ РёРЅС„РѕСЂРјР°С†РёРё 0=РЅРёРєР°РєРѕР№ РёРЅС„РѕСЂРјР°С†РёРё 1=РІ РєРѕРЅС†Рµ РѕРґРЅРѕР№ СЃС‚СЂРѕРєРѕР№ 2=С‚РѕР»СЊРєРѕ С‚Р°Р±Р»РёС†Р° СЃСЂР°РІРЅРµРЅРёСЏ 3=РїРѕРґСЂРѕР±РЅР°СЏ РёРЅС„РѕСЂРјР°С†РёСЏ РІ РїСЂРѕС†РµСЃСЃРµ РІС‹РїРѕР»РЅРµРЅРёСЏ
 as
 set nocount, xact_abort on
 set lock_timeout 120000
@@ -96,22 +96,22 @@ set @src_3parts_name = isnull(quotename(@src_database) + '.', '') + iif(@src_sch
 set @src_4parts_name = isnull(quotename(@src_linkserver) + '.', '') + iif(@src_linkserver is not null and @src_database is null, '.', '') + iif(@src_linkserver is not null and @src_database is null and @src_schema is null, '.', '') + @src_3parts_name
 
 if parsename(@target_table, 4) is not null
-	throw 50000, 'Целевая таблица должна быть на текущем сервере !', 1
+	throw 50000, 'Р¦РµР»РµРІР°СЏ С‚Р°Р±Р»РёС†Р° РґРѕР»Р¶РЅР° Р±С‹С‚СЊ РЅР° С‚РµРєСѓС‰РµРј СЃРµСЂРІРµСЂРµ !', 1
 
 if parsename(@source_table, 4) <> '' and not exists (select * from sys.servers where is_linked = 1 and name = parsename(@source_table, 4))
-	throw 50000, 'НЕ найден линк-сервер !', 1
+	throw 50000, 'РќР• РЅР°Р№РґРµРЅ Р»РёРЅРє-СЃРµСЂРІРµСЂ !', 1
 
 if charindex('trg.', @condition_for_refreshing) = 0 or charindex('src.', @condition_for_refreshing) = 0
-	throw 50000, 'Условие соединения не соответствует формату! (src.[] = trg.[])', 1
+	throw 50000, 'РЈСЃР»РѕРІРёРµ СЃРѕРµРґРёРЅРµРЅРёСЏ РЅРµ СЃРѕРѕС‚РІРµС‚СЃС‚РІСѓРµС‚ С„РѕСЂРјР°С‚Сѓ! (src.[] = trg.[])', 1
 
 if @computed_columns <> '' and exists (select * from string_split(@computed_columns, '|') where charindex('=', value) = 0)
-	throw 50000, 'Вычисляемые колонки не соответствует формату! ([имя колонки] = выражение)', 1
+	throw 50000, 'Р’С‹С‡РёСЃР»СЏРµРјС‹Рµ РєРѕР»РѕРЅРєРё РЅРµ СЃРѕРѕС‚РІРµС‚СЃС‚РІСѓРµС‚ С„РѕСЂРјР°С‚Сѓ! ([РёРјСЏ РєРѕР»РѕРЅРєРё] = РІС‹СЂР°Р¶РµРЅРёРµ)', 1
 
 if @trg_3parts_name = @src_4parts_name
-	throw 50000, 'Имена таблиц одинаковые !', 1
+	throw 50000, 'РРјРµРЅР° С‚Р°Р±Р»РёС† РѕРґРёРЅР°РєРѕРІС‹Рµ !', 1
 
 if @trg_has_$$ = 0 and object_id(@trg_3parts_name, 'U') is null
-	throw 50000, 'НЕ найдена целевая таблица!', 1
+	throw 50000, 'РќР• РЅР°Р№РґРµРЅР° С†РµР»РµРІР°СЏ С‚Р°Р±Р»РёС†Р°!', 1
 
 if @src_has_$$ = 0
 begin
@@ -123,14 +123,14 @@ begin
 			,@id = @result output
 		
 		if @result is null
-			throw 50000, ''НЕ найдена таблица источник!'', 1
+			throw 50000, ''РќР• РЅР°Р№РґРµРЅР° С‚Р°Р±Р»РёС†Р° РёСЃС‚РѕС‡РЅРёРє!'', 1
 	'
 	exec (@query)
 end
 
 begin try
 	
---таблица префиксов для однотипных таблиц
+--С‚Р°Р±Р»РёС†Р° РїСЂРµС„РёРєСЃРѕРІ РґР»СЏ РѕРґРЅРѕС‚РёРїРЅС‹С… С‚Р°Р±Р»РёС†
 	drop table if exists #table_prefixes
 	create table #table_prefixes (prefix varchar(10))
 
@@ -213,7 +213,7 @@ begin try
 		if @show_info = 3
 			raiserror(@message, 10, 1) with nowait
 	
---получение колонок участвующих в процессе
+--РїРѕР»СѓС‡РµРЅРёРµ РєРѕР»РѕРЅРѕРє СѓС‡Р°СЃС‚РІСѓСЋС‰РёС… РІ РїСЂРѕС†РµСЃСЃРµ
 		create table #columns (
 			[source] char(3)
 			,[column] varchar(200)
@@ -350,7 +350,7 @@ begin try
 			,cmp.[expression]
 		);
 
---создание временной таблицы с данными источника
+--СЃРѕР·РґР°РЅРёРµ РІСЂРµРјРµРЅРЅРѕР№ С‚Р°Р±Р»РёС†С‹ СЃ РґР°РЅРЅС‹РјРё РёСЃС‚РѕС‡РЅРёРєР°
 		set @trg_database = nullif(@trg_database, 'TEMPDB')
 		set @src_database = nullif(@src_database, 'TEMPDB')
 		set @trg_3parts_name = isnull(quotename(@trg_database) + '.', '') + iif(@trg_schema is null and @trg_database is not null, '.', '') + @trg_2parts_name
@@ -387,7 +387,7 @@ begin try
 			create unique clustered index idx1 on ' + @temp_src_table + ' (' + @src_columns + ')'
 		exec (@query)
 		
---созданеи таблицы сравнения
+--СЃРѕР·РґР°РЅРµРё С‚Р°Р±Р»РёС†С‹ СЃСЂР°РІРЅРµРЅРёСЏ
 		select @src_columns = string_agg(cast('src.' + quotename([column]) + ' as [src_' + [column] + ']' as varchar(max)), ',')
 		from #columns
 		where
@@ -484,18 +484,18 @@ begin try
 	
 		select
 			@message = string_agg(concat(char(9), case t.c
-					when @t_ttl then 'Всего строк'
-					when @t_upd then 'На обновление'
-					when @t_ins then 'На вставку'
-					when @t_del then 'На удаление'
-					when @t_busy then 'Занято транз-ей'
-						else 'Не требуют обработки' end, ': ',isnull(r.cnt, 0)), @t_nl)
+					when @t_ttl then 'Р’СЃРµРіРѕ СЃС‚СЂРѕРє'
+					when @t_upd then 'РќР° РѕР±РЅРѕРІР»РµРЅРёРµ'
+					when @t_ins then 'РќР° РІСЃС‚Р°РІРєСѓ'
+					when @t_del then 'РќР° СѓРґР°Р»РµРЅРёРµ'
+					when @t_busy then 'Р—Р°РЅСЏС‚Рѕ С‚СЂР°РЅР·-РµР№'
+						else 'РќРµ С‚СЂРµР±СѓСЋС‚ РѕР±СЂР°Р±РѕС‚РєРё' end, ': ',isnull(r.cnt, 0)), @t_nl)
 		from
 			(values (@t_ttl), (@t_upd), (@t_ins), (@t_del), (@t_busy), (@t_pass)) as t(c)
 			left join #r as r
 				on t.c = isnull(r.cmd, @t_ttl)
 
-		set @message = format(getdate(), @frmt1) + 'Результат сравнения: ' + @t_nl + @message
+		set @message = format(getdate(), @frmt1) + 'Р РµР·СѓР»СЊС‚Р°С‚ СЃСЂР°РІРЅРµРЅРёСЏ: ' + @t_nl + @message
 
 		if @show_info = 3
 			raiserror(@message, 10, 1) with nowait
@@ -506,7 +506,7 @@ begin try
 			return
 		end
 	
---опция UPD
+--РѕРїС†РёСЏ UPD
 		if @type_of_refresh in (0, 1, 3)
 		begin
 			select @columns = string_agg(cast(concat('trg.', quotename(t.[column])) + ' = ' + isnull(s.expression, concat('src.', quotename(s.[column]))) as varchar(max)), ',')
@@ -585,13 +585,13 @@ begin try
 				cnt2 = @row_count
 			where cmd = @t_upd
 		
-			set @message = format(getdate(), @frmt1) + concat('Обновлено строк: ', @row_count)
+			set @message = format(getdate(), @frmt1) + concat('РћР±РЅРѕРІР»РµРЅРѕ СЃС‚СЂРѕРє: ', @row_count)
 
 			if @show_info = 3
 				raiserror(@message, 10, 1) with nowait
 		end
 		
---опция INS
+--РѕРїС†РёСЏ INS
 		if @type_of_refresh in (0, 1, 4)
 		begin
 			
@@ -665,14 +665,14 @@ begin try
 				cnt2 = @row_count
 			where cmd = @t_ins
 
-			set @message = format(getdate(), @frmt1) + concat('Вставлено строк: ', @row_count)
+			set @message = format(getdate(), @frmt1) + concat('Р’СЃС‚Р°РІР»РµРЅРѕ СЃС‚СЂРѕРє: ', @row_count)
 
 			if @show_info = 3
 				raiserror(@message, 10, 1) with nowait
 
 		end
 		
---опция DEL
+--РѕРїС†РёСЏ DEL
 		if @type_of_refresh in (0)
 		begin
 			
@@ -725,7 +725,7 @@ begin try
 				cnt2 = @row_count
 			where cmd = @t_del
 
-			set @message = format(getdate(), @frmt1) + concat('Удалено строк: ', @row_count)
+			set @message = format(getdate(), @frmt1) + concat('РЈРґР°Р»РµРЅРѕ СЃС‚СЂРѕРє: ', @row_count)
 
 			if @show_info = 3
 				raiserror(@message, 10, 1) with nowait

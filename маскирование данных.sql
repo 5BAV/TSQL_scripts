@@ -1,5 +1,5 @@
-
---ВСТРОЕННОЕ РЕШЕНИЕ ДЛЯ SQLSERVER 2016+ МАСКИРОВАНИЕ ВЫВОДА
+п»ї
+--Р’РЎРўР РћР•РќРќРћР• Р Р•РЁР•РќРР• Р”Р›РЇ SQLSERVER 2016+ РњРђРЎРљРР РћР’РђРќРР• Р’Р«Р’РћР”Рђ
 
 drop table if exists dbo.Consultants
 
@@ -35,9 +35,9 @@ revert
 
 
 
---ЧАСТНОЕ РЕШЕНИЕ МАСКИРОВАНИЕ В ТАБЛИЦАХ
+--Р§РђРЎРўРќРћР• Р Р•РЁР•РќРР• РњРђРЎРљРР РћР’РђРќРР• Р’ РўРђР‘Р›РР¦РђРҐ
 
---создание шаблонов масок
+--СЃРѕР·РґР°РЅРёРµ С€Р°Р±Р»РѕРЅРѕРІ РјР°СЃРѕРє
 drop table if exists dbo.[Data Masking Template]
 
 select *
@@ -51,13 +51,13 @@ from (values
 	(6,'passport','111111111',3),
 	(7,'phone','1111111',3),
 	(8,'web-site','default.local',0),
-	(9,'ИНН','111111111111',1),
-	(10,'ОГРН','111111111111111',1),
+	(9,'РРќРќ','111111111111',1),
+	(10,'РћР“Р Рќ','111111111111111',1),
 	(11,'Pin-Code','1-9',2)
 ) as t([Entry No_], [Template Name], [Mask], [Mask by FN])
 
 
---создание списка таблиц и колонок для маскировки данных в них по соответствующим шаблонам масок
+--СЃРѕР·РґР°РЅРёРµ СЃРїРёСЃРєР° С‚Р°Р±Р»РёС† Рё РєРѕР»РѕРЅРѕРє РґР»СЏ РјР°СЃРєРёСЂРѕРІРєРё РґР°РЅРЅС‹С… РІ РЅРёС… РїРѕ СЃРѕРѕС‚РІРµС‚СЃС‚РІСѓСЋС‰РёРј С€Р°Р±Р»РѕРЅР°Рј РјР°СЃРѕРє
 drop table if exists dbo.[Data Masking Setup]
 
 select *
@@ -83,11 +83,11 @@ from (values
 ) as t([Table ID], [Table Name], [Field Name], [Template Entry No_])
 
 
---функция генерирующая данные для шаблона
+--С„СѓРЅРєС†РёСЏ РіРµРЅРµСЂРёСЂСѓСЋС‰Р°СЏ РґР°РЅРЅС‹Рµ РґР»СЏ С€Р°Р±Р»РѕРЅР°
 go
 create or alter function dbo.[fn_string_masking] (
-	@string nvarchar(200), -- входная строка
-	@type_of_mask int	-- 1) цифры заменяем единицей 2) любые цифры для пин-кода 3) уникальными цифрами не короче исходной длины 
+	@string nvarchar(200), -- РІС…РѕРґРЅР°СЏ СЃС‚СЂРѕРєР°
+	@type_of_mask int	-- 1) С†РёС„СЂС‹ Р·Р°РјРµРЅСЏРµРј РµРґРёРЅРёС†РµР№ 2) Р»СЋР±С‹Рµ С†РёС„СЂС‹ РґР»СЏ РїРёРЅ-РєРѕРґР° 3) СѓРЅРёРєР°Р»СЊРЅС‹РјРё С†РёС„СЂР°РјРё РЅРµ РєРѕСЂРѕС‡Рµ РёСЃС…РѕРґРЅРѕР№ РґР»РёРЅС‹ 
 )
 returns nvarchar(200)
 as
@@ -105,9 +105,9 @@ begin
 	begin
 		set @result = stuff(@result, patindex(N'%[02-9]%', @result), 1, N'1')
 	end
-	while patindex(N'%[a-zа-я]%', @result) > 0
+	while patindex(N'%[a-zР°-СЏ]%', @result) > 0
 	begin
-		set @result = stuff(@result, patindex(N'%[a-zа-я]%', @result), 1, N'')
+		set @result = stuff(@result, patindex(N'%[a-zР°-СЏ]%', @result), 1, N'')
 	end
 end
 else if @type_of_mask = 2
@@ -120,9 +120,9 @@ begin
 	set @int_value = abs(checksum(hashbytes('md5',@string)))
 	set @len = len(@string) - len(@int_value)
 	set @result = right(concat(left(replicate('', @len) + @string, @len), @int_value),len(@string))
-	while patindex(N'%[a-zа-я]%', @result) > 0
+	while patindex(N'%[a-zР°-СЏ]%', @result) > 0
 	begin
-		set @result = stuff(@result, patindex(N'%[a-zа-я]%', @result), 1, N'')
+		set @result = stuff(@result, patindex(N'%[a-zР°-СЏ]%', @result), 1, N'')
 	end
 end
 return @result
@@ -130,7 +130,7 @@ end
 go
 
 
---последовательность для добавления к маске в случае если значения должны быть уникальными
+--РїРѕСЃР»РµРґРѕРІР°С‚РµР»СЊРЅРѕСЃС‚СЊ РґР»СЏ РґРѕР±Р°РІР»РµРЅРёСЏ Рє РјР°СЃРєРµ РІ СЃР»СѓС‡Р°Рµ РµСЃР»Рё Р·РЅР°С‡РµРЅРёСЏ РґРѕР»Р¶РЅС‹ Р±С‹С‚СЊ СѓРЅРёРєР°Р»СЊРЅС‹РјРё
 drop sequence if exists dbo.[sq_for_masking]
 
 create sequence dbo.[sq_for_masking] as
@@ -144,7 +144,7 @@ create sequence dbo.[sq_for_masking] as
 go
 
 
---создание таблицы логирования работы процедуры
+--СЃРѕР·РґР°РЅРёРµ С‚Р°Р±Р»РёС†С‹ Р»РѕРіРёСЂРѕРІР°РЅРёСЏ СЂР°Р±РѕС‚С‹ РїСЂРѕС†РµРґСѓСЂС‹
 if object_id('dbo.[data_masking_log]','U') is null
 begin
 	create table dbo.[data_masking_log] (
@@ -159,21 +159,21 @@ end
 go
 
 
---процедура маскирования
+--РїСЂРѕС†РµРґСѓСЂР° РјР°СЃРєРёСЂРѕРІР°РЅРёСЏ
 create or alter proc dbo.[sp_data_masking]
-	@rows_to_update int = 4000, --размер пачки строк для маскирования за итерацию
-	@table_id_list varchar(max) = '', --список ИД таблиц (из таблицы [Data Masking Setup]) для маскирования, разделитель |
-	@debug bit = 0, --если 1 то только вывода отладочной информации
-	@delay_sec smallint = 1, --задержка в секундах между итерациями
-	@rowlock bit = 1, --включить хинт
-	@use_dbts binary(8) = 0x0 --можно задать максимально учитываемый timestamp
+	@rows_to_update int = 4000, --СЂР°Р·РјРµСЂ РїР°С‡РєРё СЃС‚СЂРѕРє РґР»СЏ РјР°СЃРєРёСЂРѕРІР°РЅРёСЏ Р·Р° РёС‚РµСЂР°С†РёСЋ
+	@table_id_list varchar(max) = '', --СЃРїРёСЃРѕРє РР” С‚Р°Р±Р»РёС† (РёР· С‚Р°Р±Р»РёС†С‹ [Data Masking Setup]) РґР»СЏ РјР°СЃРєРёСЂРѕРІР°РЅРёСЏ, СЂР°Р·РґРµР»РёС‚РµР»СЊ |
+	@debug bit = 0, --РµСЃР»Рё 1 С‚Рѕ С‚РѕР»СЊРєРѕ РІС‹РІРѕРґР° РѕС‚Р»Р°РґРѕС‡РЅРѕР№ РёРЅС„РѕСЂРјР°С†РёРё
+	@delay_sec smallint = 1, --Р·Р°РґРµСЂР¶РєР° РІ СЃРµРєСѓРЅРґР°С… РјРµР¶РґСѓ РёС‚РµСЂР°С†РёСЏРјРё
+	@rowlock bit = 1, --РІРєР»СЋС‡РёС‚СЊ С…РёРЅС‚
+	@use_dbts binary(8) = 0x0 --РјРѕР¶РЅРѕ Р·Р°РґР°С‚СЊ РјР°РєСЃРёРјР°Р»СЊРЅРѕ СѓС‡РёС‚С‹РІР°РµРјС‹Р№ timestamp
 as
 set nocount, xact_abort on
 
 if @@servername like '%PROD%'
-	throw 50000, 'НА ПРОДЕ НЕ ЗАПУСКАТЬ !', 1
+	throw 50000, 'РќРђ РџР РћР”Р• РќР• Р—РђРџРЈРЎРљРђРўР¬ !', 1
 
-if @debug = 0 insert into dbo.[data_masking_log] ([Step Name], [Step Value]) values ('процедура', 'СТАРТ')
+if @debug = 0 insert into dbo.[data_masking_log] ([Step Name], [Step Value]) values ('РїСЂРѕС†РµРґСѓСЂР°', 'РЎРўРђР Рў')
 
 declare
 	@query varchar(max),
@@ -232,7 +232,7 @@ create table #errors (
 	msg nvarchar(4000)
 )
 
-if @debug = 0 insert into dbo.[data_masking_log] ([Step Name], [Step Value]) values (concat('таблицы для маскировки - (',(select count(distinct tbl) from #sql_tables_and_fields),')'), (select distinct concat(tbl,' | ') from #sql_tables_and_fields for xml path('')))
+if @debug = 0 insert into dbo.[data_masking_log] ([Step Name], [Step Value]) values (concat('С‚Р°Р±Р»РёС†С‹ РґР»СЏ РјР°СЃРєРёСЂРѕРІРєРё - (',(select count(distinct tbl) from #sql_tables_and_fields),')'), (select distinct concat(tbl,' | ') from #sql_tables_and_fields for xml path('')))
 
 declare curs cursor local for
 	select distinct	tbl
@@ -395,7 +395,7 @@ begin
 		end
 	'
 	
-	if @debug = 0 insert into dbo.[data_masking_log] ([Step Name], [Step Value]) values (@tbl, 'будет маскирована')
+	if @debug = 0 insert into dbo.[data_masking_log] ([Step Name], [Step Value]) values (@tbl, 'Р±СѓРґРµС‚ РјР°СЃРєРёСЂРѕРІР°РЅР°')
 	
 	begin try
 		if @debug = 1
@@ -412,7 +412,7 @@ begin
 		)
 	
 		if @debug = 0 insert into dbo.[data_masking_log] ([Step Name], [Step Value]) values (@tbl, @query)
-		if @debug = 0 insert into dbo.[data_masking_log] ([Step Name], [Step Value]) values ('ошибка', @error)
+		if @debug = 0 insert into dbo.[data_masking_log] ([Step Name], [Step Value]) values ('РѕС€РёР±РєР°', @error)
 		
 	end catch
 	
@@ -427,6 +427,6 @@ deallocate curs
 if (select count(*) from #errors) > 0
 	select * from #errors
 
-if @debug = 0 insert into dbo.[data_masking_log] ([Step Name], [Step Value]) values ('процедура', 'СТОП')
+if @debug = 0 insert into dbo.[data_masking_log] ([Step Name], [Step Value]) values ('РїСЂРѕС†РµРґСѓСЂР°', 'РЎРўРћРџ')
 
 go

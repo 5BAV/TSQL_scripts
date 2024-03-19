@@ -1,4 +1,4 @@
---создается триггер на таблице
+п»ї--СЃРѕР·РґР°РµС‚СЃСЏ С‚СЂРёРіРіРµСЂ РЅР° С‚Р°Р±Р»РёС†Рµ
 create or alter trigger tr_a1 on dbo.A1
 instead of delete
 as
@@ -28,7 +28,7 @@ else if (@sc = 'all')
 		on a.id = d.id
 go
 
---для управления задать контекст
+--РґР»СЏ СѓРїСЂР°РІР»РµРЅРёСЏ Р·Р°РґР°С‚СЊ РєРѕРЅС‚РµРєСЃС‚
 begin tran
 exec sys.sp_set_session_context N'deletion', 'all'
 select * from dbo.A1
