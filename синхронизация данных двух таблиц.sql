@@ -78,7 +78,7 @@ declare
 
 select
 	@trg_table = parsename(@target_table, 1)
-	,@trg_schema = parsename(@target_table, 2)
+	,@trg_schema = isnull(parsename(@target_table, 2), schema_name())
 	,@trg_database = iif(@trg_table like '#%', 'TEMPDB', parsename(@target_table, 3))
 	,@src_table = parsename(@source_table, 1)
 	,@src_schema = parsename(@source_table, 2)
@@ -142,7 +142,7 @@ begin try
 		from sys.tables as t
 		where
 			t.[name] like replace(@table, ''$$'', ''%'')
-			and t.[schema_id] = schema_id(isnull(@schema, schema_name()))
+			and t.[schema_id] = schema_id(@schema)
 			and t.[name] <> @table2
 			and exists (select * from dbo.[TABLE PREFIXES] as c with(nolock) where c.Blocked = 0 and t.Name like c.Name + ''%'' )'
 
@@ -387,7 +387,7 @@ begin try
 			create unique clustered index idx1 on ' + @temp_src_table + ' (' + @src_columns + ')'
 		exec (@query)
 		
---созданеи таблицы сравнения
+--создание таблицы сравнения
 		select @src_columns = string_agg(cast('src.' + quotename([column]) + ' as [src_' + [column] + ']' as varchar(max)), ',')
 		from #columns
 		where
@@ -430,6 +430,22 @@ begin try
 			and t.[source] = 'TRG'
 
 		set @query = '
+			declare @ts binary(8)
+
+			if exists (
+				select *
+				from
+					sys.dm_tran_locks as l
+					inner join sys.tables as t
+						on t.[object_id] = l.resource_associated_entity_id
+				where
+					t.[name] = ''' + @trg_table + '''
+					and schema_name(t.[schema_id]) = ''' + @trg_schema + '''
+			)
+				set @ts = min_active_rowversion()
+			else
+				set @ts = @@dbts
+
 			;with trg as (
 				select
 					*
@@ -444,13 +460,13 @@ begin try
 				,cast(src.[timestamp] as varbinary(8)) as [src_timestamp]
 				,' + @src_columns + '
 				,case
-					when (trg.[timestamp] is not null and src.[timestamp] is not null and trg.[timestamp] < min_active_rowversion()) and (' + @additional_condition + ')
+					when (trg.[timestamp] is not null and src.[timestamp] is not null and trg.[timestamp] < @ts) and (' + @additional_condition + ')
 					then ''' + @t_upd + '''
 					when trg.[timestamp] is null
 					then ''' + @t_ins + '''
-					when src.[timestamp] is null and trg.[timestamp] < min_active_rowversion()
+					when src.[timestamp] is null and trg.[timestamp] < @ts
 					then ''' + @t_del + '''
-					when trg.[timestamp] >= min_active_rowversion()
+					when trg.[timestamp] >= @ts
 					then ''' + @t_busy + '''
 					else ''' + @t_pass + '''
 						end as [command]

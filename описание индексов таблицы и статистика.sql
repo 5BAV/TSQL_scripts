@@ -1,7 +1,11 @@
 ﻿set nocount, xact_abort on
 set tran isolation level read uncommitted
 
-declare @schema_table sysname = 'dbo.table'
+declare @table_with_schema nvarchar(254) = 'dbo.SalesData'
+
+------------------------------------------------------------------
+
+set @table_with_schema =  concat_ws('.', isnull(parsename(@table_with_schema, 2), schema_name()), parsename(@table_with_schema, 1))
 
 drop table if exists #Buffs;
 create table #Buffs (
@@ -11,133 +15,34 @@ create table #Buffs (
     ,primary key ( db_id, allocation_unit_id )
 );
 
-drop table if exists #OpStats;
-create table #OpStats (
-	database_id smallint not null
-	,[object_id] int not null
-	,index_id int not null
-	,range_scan_count bigint null
-	,singleton_lookup_count bigint null
-	,forwarded_fetch_count bigint null
-	,lob_fetch_in_pages bigint null
-	,row_overflow_fetch_in_pages bigint null
-	,leaf_insert_count bigint null
-	,leaf_update_count bigint null
-	,leaf_delete_count bigint null
-	,leaf_ghost_count bigint null
-	,nonleaf_insert_count bigint null
-	,nonleaf_update_count bigint null
-	,nonleaf_delete_count bigint null
-	,leaf_allocation_count bigint null
-	,nonleaf_allocation_count bigint null
-	,row_lock_count bigint null
-	,row_lock_wait_count bigint null
-	,row_lock_wait_in_ms bigint null
-	,page_lock_count bigint null
-	,page_lock_wait_count bigint null
-	,page_lock_wait_in_ms bigint null
-	,index_lock_promotion_attempt_count bigint null
-	,index_lock_promotion_count bigint null
-	,page_latch_wait_count bigint null
-	,page_latch_wait_in_ms bigint null
-	,tree_page_latch_wait_count bigint null
-	,tree_page_latch_wait_in_ms bigint null
-	,page_io_latch_wait_count bigint null
-	,page_io_latch_wait_in_ms bigint null
-	,page_compression_attempt_count bigint null
-	,page_compression_success_count bigint null
-	,primary key ( database_id, [object_id], index_id )
-)
-
 insert into #Buffs (db_id, allocation_unit_id, size)
 select
 	database_id
 	,allocation_unit_id
 	,convert(decimal(12, 3), count(*) / 128.0)
-from sys.dm_os_buffer_descriptors with ( nolock )
+from sys.dm_os_buffer_descriptors
+where database_id = db_id()
 group by
 	database_id
 	,allocation_unit_id
 option (maxdop 1)
 
-insert into #OpStats (
-	database_id
-	,[object_id]
-	,index_id
-	,range_scan_count
-	,singleton_lookup_count
-	,forwarded_fetch_count
-	,lob_fetch_in_pages
-	,row_overflow_fetch_in_pages
-	,leaf_insert_count
-	,leaf_update_count
-	,leaf_delete_count
-	,leaf_ghost_count
-	,nonleaf_insert_count
-	,nonleaf_update_count
-	,nonleaf_delete_count
-	,leaf_allocation_count
-	,nonleaf_allocation_count
-	,row_lock_count
-	,row_lock_wait_count
-	,row_lock_wait_in_ms
-	,page_lock_count
-	,page_lock_wait_count
-	,page_lock_wait_in_ms
-	,index_lock_promotion_attempt_count
-	,index_lock_promotion_count
-	,page_latch_wait_count
-	,page_latch_wait_in_ms
-	,tree_page_latch_wait_count
-	,tree_page_latch_wait_in_ms
-	,page_io_latch_wait_count
-	,page_io_latch_wait_in_ms
-	,page_compression_attempt_count
-	,page_compression_success_count
+;with frag as (
+	select
+		index_id
+		,lm.vl
+		,concat_ws(' ', count(*), lm.vl) as prt_frg_lm
+	from
+		sys.dm_db_index_physical_stats(db_id(), object_id(@table_with_schema, 'U'), null, null,  'LIMITED')
+		outer apply (
+			select case cast(avg_fragmentation_in_percent as int) / 25 when 0 then '<25' when 1 then '<50' when 2 then '<75' else '<100' end + '%' as vl
+		) as lm
+	where alloc_unit_type_desc = 'IN_ROW_DATA'
+	group by
+		index_id
+		,lm.vl
 )
-select
-	os.database_id
-	,os.[object_id]
-	,os.index_id
-	,sum(os.range_scan_count) as range_scan_count
-	,sum(os.singleton_lookup_count) as singleton_lookup_count
-	,sum(os.forwarded_fetch_count) as forwarded_fetch_count
-	,sum(os.lob_fetch_in_pages) as lob_fetch_in_pages
-	,sum(os.row_overflow_fetch_in_pages) as row_overflow_fetch_in_pages
-	,sum(os.leaf_insert_count) as leaf_insert_count
-	,sum(os.leaf_update_count) as leaf_update_count
-	,sum(os.leaf_delete_count) as leaf_delete_count
-	,sum(os.leaf_ghost_count) as leaf_ghost_count
-	,sum(os.nonleaf_insert_count) as nonleaf_insert_count
-	,sum(os.nonleaf_update_count) as nonleaf_update_count
-	,sum(os.nonleaf_delete_count) as nonleaf_delete_count
-	,sum(os.leaf_allocation_count) as leaf_allocation_count
-	,sum(os.nonleaf_allocation_count) as nonleaf_allocation_count
-	,sum(os.row_lock_count) as row_lock_count
-	,sum(os.row_lock_wait_count) as row_lock_wait_count
-	,sum(os.row_lock_wait_in_ms) as row_lock_wait_in_ms
-	,sum(os.page_lock_count) as page_lock_count
-	,sum(os.page_lock_wait_count) as page_lock_wait_count
-	,sum(os.page_lock_wait_in_ms) as page_lock_wait_in_ms
-	,sum(os.index_lock_promotion_attempt_count) as index_lock_promotion_attempt_count
-	,sum(os.index_lock_promotion_count) as index_lock_promotion_count
-	,sum(os.page_latch_wait_count) as page_latch_wait_count
-	,sum(os.page_latch_wait_in_ms) as page_latch_wait_in_ms
-	,sum(os.tree_page_latch_wait_count) as tree_page_latch_wait_count
-	,sum(os.tree_page_latch_wait_in_ms) as tree_page_latch_wait_in_ms
-	,sum(os.page_io_latch_wait_count) as page_io_latch_wait_count
-	,sum(os.page_io_latch_wait_in_ms) as page_io_latch_wait_in_ms
-	,sum(os.page_compression_attempt_count) as page_compression_attempt_count
-	,sum(os.page_compression_success_count) as page_compression_success_count
-from sys.dm_db_index_operational_stats(null, null, null, 0) as os
-where os.database_id = db_id()
-group by
-	os.database_id
-    ,os.object_id
-    ,os.index_id
-option (maxdop 1)
-
-;with TableInfo as (
+, TableInfo as (
 	select
 		t.[object_id]
 		,i.index_id
@@ -164,6 +69,7 @@ option (maxdop 1)
 		,convert(decimal(12,3),sum(a.used_pages) * 8. / 1024.) as [used_space_mb]
 		,convert(decimal(12,3),sum(a.data_pages) * 8. / 1024.) as [data_space_mb]
 		,sum(bi.size) as [buffer_pool_space_mb]
+		,frg.pfl
 	from
 		sys.tables as t
 		inner join sys.indexes as i
@@ -178,7 +84,12 @@ option (maxdop 1)
 		left join #Buffs as bi
 			on bi.[db_id] = db_id()
 			and a.allocation_unit_id = bi.allocation_unit_id 
-	where i.[object_id] > 255 
+		outer apply (
+			select string_agg(f.prt_frg_lm , ', ') within group (order by f.vl desc) as pfl
+			from frag as f
+			where f.index_id = i.index_id
+		) as frg
+	where t.[object_id] = object_id(@table_with_schema, 'U')
 	group by
 		sch.[name]
 		,t.[name]
@@ -193,6 +104,7 @@ option (maxdop 1)
 		,i.index_id
 		,i.filter_definition
 		,i.is_disabled
+		,frg.pfl
 )
 select 
 	ti.[object_id]
@@ -217,7 +129,8 @@ select
 	,ti.used_space_mb
 	,ti.data_space_mb
 	,ti.buffer_pool_space_mb
-	,stats_date(ti.[object_id], ti.index_id) as [stats_date]
+	,ti.pfl as [кол-во секций и их процент внеш.фрагментации]
+	,stt.last_updated as [stats_date]
 	,ius.user_seeks
 	,ius.user_scans
 	,ius.user_lookups
@@ -258,12 +171,66 @@ select
 	,ios.page_io_latch_wait_in_ms
 	,ios.page_compression_attempt_count
 	,ios.page_compression_success_count
+    ,stt.[rows]
+    ,stt.rows_sampled
+    ,stt.steps
+    ,stt.unfiltered_rows
+    ,stt.modification_counter
+	,iif(ti.[filter] is null, case stt.modification_counter / cast(sqrt(1000 * stt.[rows]) as int) when 0 then 'актуально' when 1 then 'вероятно устарела' else 'скорее устарела' end, 'индекс с фильтром') as [актуальность статистики]
 from
 	TableInfo as ti
-	left join #OpStats as ios
-		on ti.[object_id] = ios.[object_id]
-		and ti.index_id = ios.index_id
-		and ios.database_id = db_id()
+	outer apply (
+		select
+			os.database_id
+			,os.[object_id]
+			,os.index_id
+			,sum(os.range_scan_count) as range_scan_count
+			,sum(os.singleton_lookup_count) as singleton_lookup_count
+			,sum(os.forwarded_fetch_count) as forwarded_fetch_count
+			,sum(os.lob_fetch_in_pages) as lob_fetch_in_pages
+			,sum(os.row_overflow_fetch_in_pages) as row_overflow_fetch_in_pages
+			,sum(os.leaf_insert_count) as leaf_insert_count
+			,sum(os.leaf_update_count) as leaf_update_count
+			,sum(os.leaf_delete_count) as leaf_delete_count
+			,sum(os.leaf_ghost_count) as leaf_ghost_count
+			,sum(os.nonleaf_insert_count) as nonleaf_insert_count
+			,sum(os.nonleaf_update_count) as nonleaf_update_count
+			,sum(os.nonleaf_delete_count) as nonleaf_delete_count
+			,sum(os.leaf_allocation_count) as leaf_allocation_count
+			,sum(os.nonleaf_allocation_count) as nonleaf_allocation_count
+			,sum(os.row_lock_count) as row_lock_count
+			,sum(os.row_lock_wait_count) as row_lock_wait_count
+			,sum(os.row_lock_wait_in_ms) as row_lock_wait_in_ms
+			,sum(os.page_lock_count) as page_lock_count
+			,sum(os.page_lock_wait_count) as page_lock_wait_count
+			,sum(os.page_lock_wait_in_ms) as page_lock_wait_in_ms
+			,sum(os.index_lock_promotion_attempt_count) as index_lock_promotion_attempt_count
+			,sum(os.index_lock_promotion_count) as index_lock_promotion_count
+			,sum(os.page_latch_wait_count) as page_latch_wait_count
+			,sum(os.page_latch_wait_in_ms) as page_latch_wait_in_ms
+			,sum(os.tree_page_latch_wait_count) as tree_page_latch_wait_count
+			,sum(os.tree_page_latch_wait_in_ms) as tree_page_latch_wait_in_ms
+			,sum(os.page_io_latch_wait_count) as page_io_latch_wait_count
+			,sum(os.page_io_latch_wait_in_ms) as page_io_latch_wait_in_ms
+			,sum(os.page_compression_attempt_count) as page_compression_attempt_count
+			,sum(os.page_compression_success_count) as page_compression_success_count
+		from
+			sys.dm_db_index_operational_stats(db_id(), ti.[object_id], ti.index_id, 0) as os
+		group by
+			os.database_id
+		    ,os.object_id
+		    ,os.index_id
+	) as ios
+	outer apply (
+		select
+			last_updated
+			,[rows]
+			,rows_sampled
+			,steps
+			,unfiltered_rows
+			,modification_counter
+		from sys.dm_db_stats_properties(ti.[object_id], ti.index_id)
+	) as stt
 	outer apply (
 		select 
 			ius.user_seeks
@@ -346,6 +313,6 @@ from
 			and ic.index_id = ti.index_id
 			and ic.is_included_column = 0
 	) as idx_len
-where ti.[table] = replace(replace(@schema_table, '[', ''), ']', '')
+where ti.[table] = @table_with_schema
 option (recompile, maxdop 1)
 

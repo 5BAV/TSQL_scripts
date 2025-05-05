@@ -1353,6 +1353,7 @@ begin
 						iif(s.[is primary key] | s.[is unique constraint] = 1, '', ',ignore_dup_key = ' + iif(s.[ignore dup key] = 1, 'on', 'off')) + '
 						,allow_page_locks = ' + iif(s.[allow page locks] = 1, 'on', 'off') + '
 						,allow_row_locks = ' + iif(s.[allow row locks] = 1, 'on', 'off') + ' )'
+			when s.name <> t.name then 'exec sys.sp_rename @objname = N''' + t.[schema.table] + '.' + t.[name] + ''', @newname = ''' + parsename(s.[name], 1) + ''', @objtype = ''index'''
 			else '' end
 			+ iif(s.[is disabled] = 1 and t.[is disabled] = 0, @c_nl + 'alter index ' + s.[name] + ' on ' + s.[schema.table] + ' disable', '')
 		,concat(isnull(s.[rowcount], t.[rowcount]), ' rows ≥', isnull(s.[data_size], t.[data_size]), ' KB')
@@ -1668,7 +1669,7 @@ begin--только генерация скрипта
 	begin
 		set @step_desc = formatmessage('%-20s %s', trim(substring(@step_desc, 1, charindex(':', @step_desc))), trim(substring(@step_desc, charindex(':', @step_desc) + 1, len(@step_desc))))
 
-		print formatmessage(',(%-4s,%-25s,%s)', @current_step, quotename(@db,''''), quotename(@step_desc,''''))
+		print formatmessage(',(%-4s,%-25s,%s)', @current_step, quotename(@db,''''), '''' + @step_desc + '''')
 
 		fetch next from cursRW into @current_step, @db, @step_desc
 	end
